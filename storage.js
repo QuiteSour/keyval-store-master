@@ -41,3 +41,24 @@ module.exports.get = function get(key, now = getTimestampAfterNDays(0)) {
         return JSON.parse(result.rows[0].data);
     });
 };
+
+module.exports.getAll = function getAll(
+    lastId = 0,
+    limit = 20,
+    isExpired = 1,
+    now = getTimestampAfterNDays(0)
+  ) {
+    const operator = +isExpired ? '<=' : '>';
+    return query(
+      `SELECT * FROM ${TABLE_NAME} where id > $1 and expire_on ${operator} $2 order by id LIMIT $3;`,
+      [lastId, now, limit]
+    ).then((result) => {
+      return result.rows;
+    });
+  };
+
+module.exports.update = function update(key, expiryDate) {
+    return query(`UPDATE ${TABLE_NAME} SET expire_on = $1 where key = $2`, [expiryDate, key]).then((result) => {
+        if (!result.rowCount) throw createHttpError(404, `Key ${key} not found!`);
+    });
+};
